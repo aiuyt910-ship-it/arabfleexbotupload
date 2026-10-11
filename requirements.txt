@@ -4,3 +4,4 @@ requests-toolbelt
 boto3
 yt-dlp
 playwright
+pip install beautifulsoup4
