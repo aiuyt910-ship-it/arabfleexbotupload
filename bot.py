@@ -19,16 +19,18 @@ from botocore.config import Config
 try:
     import psutil
     HAS_PSUTIL = True
-except ImportError: HAS_PSUTIL = False
+except ImportError: 
+    HAS_PSUTIL = False
 
 try:
     from playwright.sync_api import sync_playwright
     HAS_PLAYWRIGHT = True
-except ImportError: HAS_PLAYWRIGHT = False
+except ImportError: 
+    HAS_PLAYWRIGHT = False
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-VERSION = "18.6.2 (Text Watermark Toggle & Blur)"
+VERSION = "18.7.0 (Smart Delogo & Placement)"
 TOKEN = "8888154300:AAG2Bpw_dRza9a1mhFzvi182pP0ULo3IFwA"
 ADMIN_CHAT_ID = 1013251619
 CONFIG_FILE = "api_keys_config.json"
@@ -68,21 +70,27 @@ DEFAULT_KEYS = {
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f: json.dump(DEFAULT_KEYS, f, indent=4)
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f: 
+            json.dump(DEFAULT_KEYS, f, indent=4)
         return DEFAULT_KEYS.copy()
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             updated = False
             for k, v in DEFAULT_KEYS.items():
-                if k not in data: data[k] = v; updated = True
+                if k not in data: 
+                    data[k] = v
+                    updated = True
             if updated:
-                with open(CONFIG_FILE, "w", encoding="utf-8") as f_update: json.dump(data, f_update, indent=4)
+                with open(CONFIG_FILE, "w", encoding="utf-8") as f_update: 
+                    json.dump(data, f_update, indent=4)
             return data
-    except Exception: return DEFAULT_KEYS.copy()
+    except Exception: 
+        return DEFAULT_KEYS.copy()
 
 def save_config(config_data):
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f: json.dump(config_data, f, indent=4)
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f: 
+        json.dump(config_data, f, indent=4)
 
 bot_config = load_config()
 
@@ -126,11 +134,13 @@ def worker():
             if task.get('type') == 'upload_only':
                 upload_only_logic(task['chat_id'], task['msg_id'], task['task_id'])
             elif task.get('type') == 'merge':
-                merge_process_logic(task['links'], task['chat_id'], task['msg_id'], task['servers'], task.get('name'), task.get('quality', 'best'), task.get('watermark', False))
+                merge_process_logic(task['links'], task['chat_id'], task['msg_id'], task['servers'], task.get('name'), task.get('quality', 'best'), task.get('watermark', False), task.get('logo_pos', 'none'))
             else:
-                process_logic(task['url'], task['chat_id'], task['msg_id'], task['servers'], task.get('name'), task.get('quality', 'best'), task.get('watermark', False))
-        except Exception as e: print(f"Error in queue task: {e}")
-        finally: task_queue.task_done()
+                process_logic(task['url'], task['chat_id'], task['msg_id'], task['servers'], task.get('name'), task.get('quality', 'best'), task.get('watermark', False), task.get('logo_pos', 'none'))
+        except Exception as e: 
+            print(f"Error in queue task: {e}")
+        finally: 
+            task_queue.task_done()
 
 threading.Thread(target=worker, daemon=True).start()
 
@@ -183,8 +193,10 @@ def safe_error_text(text):
     return str(text).replace('`', '').replace('*', '').replace('_', '').replace('[', '').replace(']', '')
 
 def safe_edit(bot_instance, chat_id, message_id, text, reply_markup=None):
-    try: bot_instance.edit_message_text(text, chat_id=chat_id, message_id=message_id, reply_markup=reply_markup, parse_mode="Markdown")
-    except: pass
+    try: 
+        bot_instance.edit_message_text(text, chat_id=chat_id, message_id=message_id, reply_markup=reply_markup, parse_mode="Markdown")
+    except: 
+        pass
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('cancel_'))
 def cancel_task(call):
@@ -196,7 +208,8 @@ def cancel_task(call):
             try: p.terminate()
             except: pass
         bot.answer_callback_query(call.id, "🛑 جاري إيقاف العملية فوراً...")
-    else: bot.answer_callback_query(call.id, "⚠️ العملية انتهت أو لم تبدأ بعد.")
+    else: 
+        bot.answer_callback_query(call.id, "⚠️ العملية انتهت أو لم تبدأ بعد.")
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -204,10 +217,10 @@ def start(message):
     welcome_text = f"""🤖 *مرحباً بك في بوت Arab Fleex الاحترافي!*
 
 ✨ *المميزات المدمجة:*
-• 📥 سحب ورفع مباشر بكافة الجودات (مع فصل الحقوق).
-• ☁️ دعم Cloudflare R2 متعدد الحسابات.
-• 🧩 دمج وإنتاج جودات متعددة محلياً (نص شفاف + تمويه).
-• ♻️ إعادة الرفع الذكية عند الفشل.
+- 📥 سحب ورفع مباشر بكافة الجودات (مع فصل الحقوق).
+- ☁️ دعم Cloudflare R2 متعدد الحسابات.
+- 🧩 دمج وإنتاج جودات متعددة محلياً (نص شفاف + تمويه ذكي).
+- ♻️ إعادة الرفع الذكية عند الفشل.
 
 📋 *الأوامر:*
 🔹 `/merge` - دمج عدة مقاطع.
@@ -247,8 +260,10 @@ def manage_queue_and_clean(message):
             return
         txt = f"🚦 *مهام الطابور الحالية ({len(q_list)}):*\n\n"
         for i, task in enumerate(q_list, 1):
-            if task.get('type') == 'merge': txt += f"{i}. `دمج {len(task['links'])} مقاطع`\n"
-            else: txt += f"{i}. `{task.get('name', 'رابط غير معروف')[:40]}`\n"
+            if task.get('type') == 'merge': 
+                txt += f"{i}. `دمج {len(task['links'])} مقاطع`\n"
+            else: 
+                txt += f"{i}. `{task.get('name', 'رابط غير معروف')[:40]}`\n"
         bot.reply_to(message, txt, parse_mode="Markdown")
     elif cmd == '/clearqueue':
         count = task_queue.qsize()
@@ -258,7 +273,9 @@ def manage_queue_and_clean(message):
         count = 0
         for filename in os.listdir('.'):
             if filename.startswith(("video_", "out_", "err_", "merge_", "concat_", "part_", "encode_", "wm_out_")):
-                try: os.remove(filename); count += 1
+                try: 
+                    os.remove(filename)
+                    count += 1
                 except: pass
         bot.reply_to(message, f"🧹 *تم تنظيف {count} ملف مؤقت بنجاح.*", parse_mode="Markdown")
 
@@ -284,9 +301,9 @@ def process_name_step(message, data_input, is_merge=False):
     msg_id = sent_msg.message_id
     
     if is_merge:
-        upload_selections[msg_id] = {'type': 'merge', 'links': data_input, 'name': custom_name, 'quality': 'best', 'servers': [], 'watermark': False}
+        upload_selections[msg_id] = {'type': 'merge', 'links': data_input, 'name': custom_name, 'quality': 'best', 'servers': [], 'watermark': False, 'logo_pos': 'none'}
     else:
-        upload_selections[msg_id] = {'type': 'single', 'url': data_input, 'name': custom_name, 'quality': 'best', 'servers': [], 'watermark': False}
+        upload_selections[msg_id] = {'type': 'single', 'url': data_input, 'name': custom_name, 'quality': 'best', 'servers': [], 'watermark': False, 'logo_pos': 'none'}
     
     bot.edit_message_text(
         f"✅ الاسم: `{custom_name or 'الاسم الافتراضي'}`\n\n🎯 *الرجاء اختيار جودة التحميل:*",
@@ -296,23 +313,62 @@ def process_name_step(message, data_input, is_merge=False):
 
 def get_quality_keyboard(msg_id):
     markup = InlineKeyboardMarkup(row_width=2)
-    
     wm_state = upload_selections.get(msg_id, {}).get('watermark', False)
     markup.add(InlineKeyboardButton(f"🛡️ وضع الحقوق (اللوجو): {'✅ مفعل' if wm_state else '❌ معطل'}", callback_data=f"qual_wmtoggle_{msg_id}"))
-    
-    markup.add(
-        InlineKeyboardButton("🌟 أعلى جودة", callback_data=f"qual_best_{msg_id}"),
-        InlineKeyboardButton("📺 1080p", callback_data=f"qual_1080_{msg_id}")
-    )
-    markup.add(
-        InlineKeyboardButton("📺 720p", callback_data=f"qual_720_{msg_id}"),
-        InlineKeyboardButton("📱 480p", callback_data=f"qual_480_{msg_id}")
-    )
+    markup.add(InlineKeyboardButton("🌟 أعلى جودة", callback_data=f"qual_best_{msg_id}"), InlineKeyboardButton("📺 1080p", callback_data=f"qual_1080_{msg_id}"))
+    markup.add(InlineKeyboardButton("📺 720p", callback_data=f"qual_720_{msg_id}"), InlineKeyboardButton("📱 480p", callback_data=f"qual_480_{msg_id}"))
     markup.add(InlineKeyboardButton("📱 360p", callback_data=f"qual_360_{msg_id}"))
     markup.add(InlineKeyboardButton("🎬 تحميل كل الجودات (من المصدر)", callback_data=f"qual_all_{msg_id}"))
     markup.add(InlineKeyboardButton("🎬 إنتاج محلي (720, 480, 360)", callback_data=f"qual_encode_{msg_id}"))
     markup.add(InlineKeyboardButton("🛑 إلغاء", callback_data=f"qual_cancel_{msg_id}"))
     return markup
+
+def get_logo_position_keyboard(msg_id):
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("↖️ أعلى اليسار", callback_data=f"pos_tl_{msg_id}"),
+        InlineKeyboardButton("↗️ أعلى اليمين", callback_data=f"pos_tr_{msg_id}")
+    )
+    markup.add(
+        InlineKeyboardButton("↙️ أسفل اليسار", callback_data=f"pos_bl_{msg_id}"),
+        InlineKeyboardButton("↘️ أسفل اليمين", callback_data=f"pos_br_{msg_id}")
+    )
+    markup.add(InlineKeyboardButton("❌ بدون طمس (طباعة فقط أعلى اليسار)", callback_data=f"pos_none_{msg_id}"))
+    markup.add(InlineKeyboardButton("🛑 إلغاء", callback_data=f"pos_cancel_{msg_id}"))
+    return markup
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('pos_'))
+def handle_logo_position(call):
+    try: bot.answer_callback_query(call.id)
+    except: pass
+    parts = call.data.split('_')
+    pos_action, msg_id = parts[1], int(parts[2])
+
+    if pos_action == "cancel":
+        upload_selections.pop(msg_id, None)
+        safe_edit(bot, call.message.chat.id, msg_id, "🛑 *تم الإلغاء.*")
+        return
+
+    if msg_id not in upload_selections:
+        try: bot.answer_callback_query(call.id, "⚠️ الجلسة انتهت.", show_alert=True)
+        except: pass
+        return
+
+    upload_selections[msg_id]['logo_pos'] = pos_action
+
+    name = upload_selections[msg_id]['name'] or 'الاسم الافتراضي'
+    action = upload_selections[msg_id]['quality']
+    q_names = {'best': 'أعلى جودة 🌟', '1080': '1080p 📺', '720': '720p 📺', '480': '480p 📱', '360': '360p 📱', 'all': 'تحميل كل الجودات 🎬', 'encode': 'إنتاج محلي متعدد 🎬'}
+    
+    pos_names = {'tl': 'أعلى اليسار', 'tr': 'أعلى اليمين', 'bl': 'أسفل اليسار', 'br': 'أسفل اليمين', 'none': 'بدون طمس'}
+    wm_status = f"✅ مفعل (طمس: {pos_names.get(pos_action)})"
+
+    bot.edit_message_text(
+        f"✅ الاسم: `{name}`\n✅ الجودة: `{q_names.get(action)}`\n🛡️ الحقوق: `{wm_status}`\n\n🎯 اختر السيرفرات التي تريد الرفع عليها:",
+        chat_id=call.message.chat.id, message_id=msg_id,
+        reply_markup=get_selection_keyboard(msg_id), parse_mode="Markdown"
+    )
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('qual_'))
 def handle_quality_selection(call):
@@ -338,18 +394,23 @@ def handle_quality_selection(call):
         return
 
     upload_selections[msg_id]['quality'] = action
-    q_names = {
-        'best': 'أعلى جودة 🌟', '1080': '1080p 📺', '720': '720p 📺', 
-        '480': '480p 📱', '360': '360p 📱', 'all': 'تحميل كل الجودات 🎬', 'encode': 'إنتاج محلي متعدد 🎬'
-    }
-    name = upload_selections[msg_id]['name'] or 'الاسم الافتراضي'
-    wm_status = "✅ مفعل" if upload_selections[msg_id].get('watermark') else "❌ معطل (سحب سريع)"
     
-    bot.edit_message_text(
-        f"✅ الاسم: `{name}`\n✅ الجودة: `{q_names.get(action)}`\n🛡️ الحقوق: `{wm_status}`\n\n🎯 اختر السيرفرات التي تريد الرفع عليها:",
-        chat_id=call.message.chat.id, message_id=msg_id,
-        reply_markup=get_selection_keyboard(msg_id), parse_mode="Markdown"
-    )
+    # إذا كانت الحقوق مفعلة، اذهب لواجهة تحديد مكان اللوجو أولاً
+    if upload_selections[msg_id].get('watermark'):
+        bot.edit_message_text(
+            f"🔍 **أين يوجد اللوجو القديم في هذا الفيديو؟**\n(سيتم طمس المكان المحدد ووضع شعار ArabFleex فوقه)",
+            chat_id=call.message.chat.id, message_id=msg_id,
+            reply_markup=get_logo_position_keyboard(msg_id), parse_mode="Markdown"
+        )
+    else:
+        # إذا لم تكن مفعلة، اذهب مباشرة لاختيار السيرفرات
+        q_names = {'best': 'أعلى جودة 🌟', '1080': '1080p 📺', '720': '720p 📺', '480': '480p 📱', '360': '360p 📱', 'all': 'تحميل كل الجودات 🎬', 'encode': 'إنتاج محلي متعدد 🎬'}
+        name = upload_selections[msg_id]['name'] or 'الاسم الافتراضي'
+        bot.edit_message_text(
+            f"✅ الاسم: `{name}`\n✅ الجودة: `{q_names.get(action)}`\n🛡️ الحقوق: `❌ معطل (سحب سريع)`\n\n🎯 اختر السيرفرات التي تريد الرفع عليها:",
+            chat_id=call.message.chat.id, message_id=msg_id,
+            reply_markup=get_selection_keyboard(msg_id), parse_mode="Markdown"
+        )
 
 ALL_SERVERS = ["CloudflareR2", "CloudflareR2_2", "CloudflareR2_3", "Abstream", "Larhu", "Uqload", "Vidmoly", "Vidara", "1cloudfile", "GoFile", "VK", "Doodstream"]
 
@@ -498,20 +559,32 @@ def bypass_frdl(url, bot_instance, chat_id, message_id, task_id):
             page = context.new_page()
             page.goto(url, timeout=60000)
             final_link = page.query_selector('a:has-text("Download Now")')
-            if final_link: href = final_link.get_attribute("href"); browser.close(); return href, url
+            if final_link: 
+                href = final_link.get_attribute("href")
+                browser.close()
+                return href, url
             for i in range(60, 0, -5):
-                if active_tasks.get(task_id, {}).get("cancel"): browser.close(); raise Exception("🛑 تم إلغاء العملية.")
+                if active_tasks.get(task_id, {}).get("cancel"): 
+                    browser.close()
+                    raise Exception("🛑 تم إلغاء العملية.")
                 if task_id: safe_edit(bot_instance, chat_id, message_id, f"⏳ *ننتظر {i} ثانية لتخطي الموقع...*", reply_markup=get_cancel_keyboard(task_id))
                 page.wait_for_timeout(5000)
             try:
                 page.evaluate("document.FREE1.submit()")
                 page.wait_for_load_state("networkidle", timeout=30000)
             except:
-                try: page.click('#downloadbtnfree', force=True); page.wait_for_load_state("networkidle", timeout=30000)
+                try: 
+                    page.click('#downloadbtnfree', force=True)
+                    page.wait_for_load_state("networkidle", timeout=30000)
                 except: pass
             final_link = page.query_selector('a:has-text("Download Now")')
-            if final_link: href = final_link.get_attribute("href"); browser.close(); return href, url
-            if page.query_selector('.h-captcha'): browser.close(); raise Exception("السيرفر يطلب كابتشا.")
+            if final_link: 
+                href = final_link.get_attribute("href")
+                browser.close()
+                return href, url
+            if page.query_selector('.h-captcha'): 
+                browser.close()
+                raise Exception("السيرفر يطلب كابتشا.")
             browser.close()
             raise Exception("فشلت محاولة استخراج الرابط بالمتصفح.")
     except Exception as e: raise Exception(f"❌ frdl.my: {str(e)}")
@@ -543,6 +616,9 @@ def apply_cf_proxy(url):
     if "workers.dev" in url: return url
     if "b2.shahidtv.net" in url and (".mp4" in url or ".m3u8" in url):
         return f"https://shy-snow-52c3.alifalah9988044.workers.dev/?url={url}"
+    # معالجة روابط ok.ru إذا كانت embed
+    if "ok.ru/videoembed/" in url:
+        return url.replace("videoembed/", "video/")
     return url
 
 def get_video_quality(filepath):
@@ -605,23 +681,46 @@ def run_ffmpeg_with_progress(cmd, duration, task_id, bot_instance, chat_id, mess
     process.wait()
     return process.returncode
 
-def build_encode_cmd(input_file, scale_str, out_name, add_watermark=False):
-    actual_scale = scale_str if scale_str else "iw:ih"
+def build_encode_cmd(input_file, scale_str, out_name, add_watermark=False, logo_pos="none"):
+    filter_parts = []
+    
+    # فلتر تغيير الحجم
+    if scale_str and scale_str != "iw:ih":
+        filter_parts.append(f"scale={scale_str}")
+
+    # إضافة التمويه (delogo) وطباعة اللوجو
     if add_watermark and os.path.exists(FONT_FILE):
-        # تم إلغاء التمويه (البلور) ونقل اللوجو إلى أعلى اليسار
-        # استخدام مسار مطلق للخط لتجنب أي أخطاء في قراءة الملف من قبل النظام
         abs_font = os.path.abspath(FONT_FILE).replace('\\', '/')
-        # تم تصغير الخط إلى 24 وتحريكه أكثر لليسار (x=15, y=15) ليطابق الصورة
-        filter_str = f"scale={actual_scale},drawtext=fontfile='{abs_font}':text='ArabFleex':fontcolor=white:fontsize=24:x=15:y=15:bordercolor=black:borderw=2"
+        
+        # الأبعاد الافتراضية للتمويه والنص (أعلى اليسار)
+        dx, dy, dw, dh = "20", "20", "240", "70" # أبعاد التمويه (عرض 240، ارتفاع 70)
+        tx, ty = "35", "35" # مكان النص
+
+        if logo_pos == "tr": # أعلى اليمين
+            dx, dy = "W-260", "20"
+            tx, ty = "w-tw-35", "35"
+        elif logo_pos == "bl": # أسفل اليسار
+            dx, dy = "20", "H-90"
+            tx, ty = "35", "h-th-35"
+        elif logo_pos == "br": # أسفل اليمين
+            dx, dy = "W-260", "H-90"
+            tx, ty = "w-tw-35", "h-th-35"
+
+        # إضافة فلتر الطمس فقط إذا لم يختر المستخدم "بدون طمس"
+        if logo_pos != "none":
+            filter_parts.append(f"delogo=x={dx}:y={dy}:w={dw}:h={dh}")
+            
+        # إضافة فلتر طباعة الشعار الجديد
+        filter_parts.append(f"drawtext=fontfile='{abs_font}':text='ArabFleex':fontcolor=white:fontsize=28:x={tx}:y={ty}:bordercolor=black:borderw=2")
+
+    if filter_parts:
+        filter_str = ",".join(filter_parts)
         return ["ffmpeg", "-y", "-i", input_file, "-vf", filter_str, "-c:v", "libx264", "-crf", "23", "-preset", "ultrafast", "-c:a", "aac", out_name]
     else:
-        if scale_str and scale_str != "iw:ih":
-            return ["ffmpeg", "-y", "-i", input_file, "-vf", f"scale={scale_str}", "-c:v", "libx264", "-crf", "23", "-preset", "ultrafast", "-c:a", "aac", out_name]
-        else:
-            # إذا لم يكن هناك تغيير في الجودة أو إضافة للحقوق، نستخدم النسخ المباشر إذا اضطررنا لعملية ريندر
-            return ["ffmpeg", "-y", "-i", input_file, "-c:v", "copy", "-c:a", "copy", out_name]
+        # النسخ المباشر بدون فلاتر
+        return ["ffmpeg", "-y", "-i", input_file, "-c:v", "copy", "-c:a", "copy", out_name]
 
-def encode_local_qualities(input_file, base_name, task_id, bot_instance, chat_id, message_id, watermark=False):
+def encode_local_qualities(input_file, base_name, task_id, bot_instance, chat_id, message_id, watermark=False, logo_pos="none"):
     produced_files = []
     resolutions = [("720p", "-2:720"), ("480p", "-2:480"), ("360p", "-2:360")]
     duration = get_video_duration(input_file)
@@ -633,7 +732,7 @@ def encode_local_qualities(input_file, base_name, task_id, bot_instance, chat_id
         custom_msg = f"🎬 *جاري إنتاج جودة {q_label} محلياً{wm_text}...*"
         safe_edit(bot_instance, chat_id, message_id, custom_msg, reply_markup=get_cancel_keyboard(task_id))
         
-        cmd = build_encode_cmd(input_file, scale, out_name, add_watermark=watermark)
+        cmd = build_encode_cmd(input_file, scale, out_name, add_watermark=watermark, logo_pos=logo_pos)
         retcode = run_ffmpeg_with_progress(cmd, duration, task_id, bot_instance, chat_id, message_id, custom_msg)
         
         if retcode == 0 and os.path.exists(out_name):
@@ -891,7 +990,7 @@ def generate_final_links(target_servers, res_dict):
             failed_sites.append(f"{site_display}:\n└  {err}")
     return watch_links, download_links, failed_sites
 
-def process_logic(url, chat_id, message_id, target_servers, custom_name, quality="best", watermark=False):
+def process_logic(url, chat_id, message_id, target_servers, custom_name, quality="best", watermark=False, logo_pos="none"):
     task_id = f"{chat_id}_{message_id}_{int(time.time())}"
     active_tasks[task_id] = {"cancel": False, "process": None}
     out_file = f"out_{task_id}.mp4"
@@ -932,7 +1031,7 @@ def process_logic(url, chat_id, message_id, target_servers, custom_name, quality
                         safe_edit(bot, chat_id, message_id, custom_msg, reply_markup=get_cancel_keyboard(task_id))
                         encoded_file = f"encode_forced_{task_id}_{q}.mp4"
                         
-                        cmd = build_encode_cmd(q_file, scale_val, encoded_file, add_watermark=watermark)
+                        cmd = build_encode_cmd(q_file, scale_val, encoded_file, add_watermark=watermark, logo_pos=logo_pos)
                         retcode = run_ffmpeg_with_progress(cmd, duration, task_id, bot, chat_id, message_id, custom_msg)
                         
                         if retcode == 0 and os.path.exists(encoded_file):
@@ -952,7 +1051,7 @@ def process_logic(url, chat_id, message_id, target_servers, custom_name, quality
             download_manager(url, out_file, bot, chat_id, message_id, task_id, referer=ref, origin=org, custom_msg=f"📥 *جاري تحميل الفيديو الأصلي لإنتاج الجودات...*", quality='best')
             if not os.path.exists(out_file) or os.path.getsize(out_file) < 500000: raise Exception("❌ الملف تالف أو فارغ.")
             
-            encoded_list = encode_local_qualities(out_file, base_title, task_id, bot, chat_id, message_id, watermark=watermark)
+            encoded_list = encode_local_qualities(out_file, base_title, task_id, bot, chat_id, message_id, watermark=watermark, logo_pos=logo_pos)
             try: os.remove(out_file)
             except: pass
 
@@ -981,12 +1080,12 @@ def process_logic(url, chat_id, message_id, target_servers, custom_name, quality
 
         if needs_encode:
             duration = get_video_duration(out_file)
-            wm_text = "مع إضافة الحقوق" if watermark else "تحجيم أبعاد الفيديو"
+            wm_text = "مع إضافة الحقوق والتمويه" if watermark else "تحجيم أبعاد الفيديو"
             custom_msg = f"🎬 *جاري المعالجة محلياً ({wm_text})...*"
             safe_edit(bot, chat_id, message_id, custom_msg, reply_markup=get_cancel_keyboard(task_id))
             encoded_file = f"encode_forced_{task_id}.mp4"
             
-            cmd = build_encode_cmd(out_file, scale_val, encoded_file, add_watermark=watermark)
+            cmd = build_encode_cmd(out_file, scale_val, encoded_file, add_watermark=watermark, logo_pos=logo_pos)
             retcode = run_ffmpeg_with_progress(cmd, duration, task_id, bot, chat_id, message_id, custom_msg)
             
             if retcode == 0 and os.path.exists(encoded_file):
@@ -1090,7 +1189,7 @@ def upload_only_logic(chat_id, message_id, task_id):
         active_tasks.pop(task_id, None)
         if success: failed_uploads.pop(task_id, None)
 
-def merge_process_logic(links_list, chat_id, message_id, target_servers, custom_name, quality="best", watermark=False):
+def merge_process_logic(links_list, chat_id, message_id, target_servers, custom_name, quality="best", watermark=False, logo_pos="none"):
     task_id = f"merge_{chat_id}_{message_id}_{int(time.time())}"
     active_tasks[task_id] = {"cancel": False, "process": None}
     concat_out_file = f"concat_{task_id}.mp4"
@@ -1134,14 +1233,14 @@ def merge_process_logic(links_list, chat_id, message_id, target_servers, custom_
         try: os.remove(concat_txt_file)
         except: pass
         
-        # إضافة الحقوق على الفيديو المدمج إذا كانت مفعلة
+        # إضافة الحقوق والتمويه على الفيديو المدمج إذا كانت مفعلة
         if watermark:
             duration = get_video_duration(concat_out_file)
-            custom_msg = f"🎬 *جاري طباعة الحقوق على الفيديو المدمج...*"
+            custom_msg = f"🎬 *جاري طمس اللوجو القديم وطباعة الحقوق...*"
             safe_edit(bot, chat_id, message_id, custom_msg, reply_markup=get_cancel_keyboard(task_id))
             wm_file = f"wm_out_{task_id}.mp4"
             
-            cmd = build_encode_cmd(concat_out_file, None, wm_file, add_watermark=True)
+            cmd = build_encode_cmd(concat_out_file, None, wm_file, add_watermark=True, logo_pos=logo_pos)
             retcode = run_ffmpeg_with_progress(cmd, duration, task_id, bot, chat_id, message_id, custom_msg)
             
             if retcode == 0 and os.path.exists(wm_file):
